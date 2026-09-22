@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Browse Items') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container browse-container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+        <a href="{{ url_for('reports.browse_items') }}" aria-current="page">{{ t('Browse Items') }}</a>
+        <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% include '_account_controls.html' %}
+      </nav>
+
+      <h1>{{ t('Lost & Found Feed') }}</h1>
+      <p class="intro">{{ t('The latest lost and found reports from the community.') }}</p>
+
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p class="message {{ category }}">{{ t(message) }}</p>
+      {% endfor %}
+
+      <form class="filters" method="get" action="{{ url_for('reports.browse_items') }}">
+        <div class="search-field">
+          <label for="search">{{ t('Search') }}</label>
+          <input id="search" name="search" type="search" value="{{ filters['search'] }}" placeholder="{{ t('Item name or description') }}">
+        </div>
+
+        <div>
+          <label for="report_type">{{ t('Type') }}</label>
+          <select id="report_type" name="report_type">
+            <option value="">{{ t('Lost and found') }}</option>
+            <option value="lost" {% if filters['report_type'] == 'lost' %}selected{% endif %}>{{ t('Lost') }}</option>
+            <option value="found" {% if filters['report_type'] == 'found' %}selected{% endif %}>{{ t('Found') }}</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="category">{{ t('Category') }}</label>
+          <select id="category" name="category">
+            <option value="">{{ t('All categories') }}</option>
+            {% for row in categories %}
+              <option value="{{ row['category'] }}" {% if filters['category'] == row['category'] %}selected{% endif %}>{{ row['category'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="location">{{ t('Location') }}</label>
+          <select id="location" name="location">
+            <option value="">{{ t('All locations') }}</option>
+            {% for row in locations %}
+              <option value="{{ row['location'] }}" {% if filters['location'] == row['location'] %}selected{% endif %}>{{ row['location'] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="filter-actions">
+          <button type="submit">{{ t('Apply filters') }}</button>
+          {% if filters_active %}
+            <a href="{{ url_for('reports.browse_items') }}">{{ t('Clear') }}</a>
+          {% endif %}
+        </div>
+      </form>
+
+      {% if items %}
+        <div class="item-list">
+          {% for item in items %}
+            <a class="item-card item-card-link" href="{{ url_for('reports.item_details', item_id=item['id']) }}">
+              <header class="post-header">
+                <div class="post-author">
+                  <span class="avatar" aria-hidden="true">{{ (item['username'] or 'L')[0]|upper }}</span>
+                  <div>
+                    <strong>{{ item['username'] or t('Legacy report') }}</strong>
+                    <span>{{ t(item['report_type']|title) }} {{ t('item') }}</span>
+                  </div>
+                </div>
+                <span class="badge {{ item['report_type'] }}">{{ t(item['report_type']|title) }}</span>
+              </header>
+
+              <h2 class="post-title">{{ item['item_name'] }}</h2>
+
+              {% if item['image_filename'] %}
+                <img class="report-photo" src="{{ url_for('reports.report_photo', filename=item['image_filename']) }}" alt="{{ t('Photo of') }} {{ item['item_name'] }}">
+              {% endif %}
+
+              <dl class="item-details">
+                <div><dt>{{ t('Category') }}</dt><dd>{{ t(item['category']) }}</dd></div>
+                <div><dt>{{ t('Color') }}</dt><dd>{{ t(item['color']) if item['color'] else t('Not specified') }}</dd></div>
+                <div><dt>{{ t('Location') }}</dt><dd>{{ item['location'] }}</dd></div>
+                <div><dt>{{ t('Date') }}</dt><dd><time datetime="{{ item['date'] }}">{{ item['date'] }}</time></dd></div>
+                <div><dt>{{ t('Status') }}</dt><dd>{{ t(item['status']|title) }}</dd></div>
+              </dl>
+
+              <h3>{{ t('Description') }}</h3>
+              <p>{{ item['description'] or t('No description provided.') }}</p>
+
+              <div class="item-actions">
+                {% if item['report_type'] == 'lost' %}
+                  <span class="matches-link">{{ t('View details') }}</span>
+                {% else %}
+                  <span class="matches-link">{{ t('View details') }}</span>
+                {% endif %}
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          {% if filters_active %}
+            <h2>{{ t('No matching items') }}</h2>
+            <p>{{ t('Try changing or clearing your search filters.') }}</p>
+            <a class="button-link" href="{{ url_for('reports.browse_items') }}">{{ t('Clear filters') }}</a>
+          {% else %}
+            <h2>{{ t('No reports yet') }}</h2>
+            <p>{{ t('Submitted lost and found reports will appear here.') }}</p>
+            <a class="button-link" href="{{ url_for('reports.report_item') }}">{{ t('Report an item') }}</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </main>
+  </body>
+</html>

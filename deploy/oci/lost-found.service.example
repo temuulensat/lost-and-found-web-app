@@ -1,0 +1,22 @@
+[Unit]
+Description=Lost and Found Flask application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/lost-found
+EnvironmentFile=/etc/lost-found.env
+ExecStart=/srv/lost-found/.venv/bin/gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8000 app:create_app()
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/lost-found /srv/lost-found/instance
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

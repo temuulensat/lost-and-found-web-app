@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body class="landing-body">
+    <main class="landing-card">
+      <div class="landing-logo" aria-hidden="true">L&amp;F</div>
+      <p class="landing-brand">{{ t('Lost & Found') }}</p>
+      <h1>{{ t('Bring lost items home.') }}</h1>
+      <p class="landing-intro">{{ t('Report lost or found belongings, discover possible matches, and connect privately with the right person.') }}</p>
+      <div class="landing-actions">
+        <a class="landing-button primary" href="{{ url_for('auth.signup') }}">{{ t('Sign Up') }}</a>
+        <a class="landing-button secondary" href="{{ url_for('auth.login') }}">{{ t('Log In') }}</a>
+      </div>
+      {% include '_language_switcher.html' %}
+    </main>
+  </body>
+</html>

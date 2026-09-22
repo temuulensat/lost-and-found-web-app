@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Conversation') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container browse-container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+        <a href="{{ url_for('reports.browse_items') }}">{{ t('Browse Items') }}</a>
+        <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}" aria-current="page">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% include '_account_controls.html' %}
+      </nav>
+
+      <a class="back-link" href="{{ url_for('messaging.conversations') }}">&larr; {{ t('Back to Conversations') }}</a>
+      <h1>{{ conversation['lost_item_name'] }} / {{ conversation['found_item_name'] }}</h1>
+      <p class="intro">{{ t('Private conversation between') }} {{ conversation['lost_username'] }} {{ t('and') }} {{ conversation['found_username'] }}.</p>
+
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p class="message {{ category }}">{{ t(message) }}</p>
+      {% endfor %}
+
+      <div class="message-list" aria-label="Messages">
+        {% if messages %}
+          {% for message in messages %}
+            <article class="chat-message {% if message['sender_id'] == g.user['id'] %}mine{% endif %}">
+              <header><strong>{{ message['username'] }}</strong> <time>{{ message['created_at'] }}</time></header>
+              <p>{{ message['body'] }}</p>
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="no-messages">{{ t('No messages yet. Start the conversation below.') }}</p>
+        {% endif %}
+      </div>
+
+      <form class="compose-form" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="body">{{ t('Message') }}</label>
+        <textarea id="body" name="body" rows="4" maxlength="2000" required></textarea>
+        <button type="submit">{{ t('Send message') }}</button>
+      </form>
+    </main>
+  </body>
+</html>

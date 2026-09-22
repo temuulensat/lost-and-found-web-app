@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Sign Up') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container auth-container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.landing') }}">{{ t('Lost & Found') }}</a>
+        <a href="{{ url_for('auth.login') }}">{{ t('Log In') }}</a>
+        <a href="{{ url_for('auth.signup') }}" aria-current="page">{{ t('Sign Up') }}</a>
+        {% include '_language_switcher.html' %}
+      </nav>
+
+      <h1>{{ t('Sign Up') }}</h1>
+      <p class="intro">{{ t('Create an account to report lost and found items.') }}</p>
+
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p class="message {{ category }}">{{ t(message) }}</p>
+      {% endfor %}
+
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="username">{{ t('Username') }}</label>
+        <input id="username" name="username" autocomplete="username" value="{{ request.form.get('username', '') }}" required>
+
+        <label for="email">{{ t('Email') }}</label>
+        <input id="email" name="email" type="email" autocomplete="email" value="{{ request.form.get('email', '') }}" required>
+
+        <label for="password">{{ t('Password') }}</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+
+        <button type="submit">{{ t('Create account') }}</button>
+      </form>
+
+      <p class="auth-switch">{{ t('Already have an account?') }} <a href="{{ url_for('auth.login') }}">{{ t('Log In') }}</a>.</p>
+    </main>
+  </body>
+</html>

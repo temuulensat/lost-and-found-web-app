@@ -1,0 +1,8 @@
+<div class="nav-account">
+  <span class="username" title="{{ g.user['username'] }}">{{ g.user['username'] }}</span>
+  {% include '_language_switcher.html' %}
+  <form class="logout-form" method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">{{ t('Log Out') }}</button>
+  </form>
+</div>

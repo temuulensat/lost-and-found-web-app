@@ -1,0 +1,10 @@
+<form class="language-form" method="post" action="{{ url_for('localization.set_language') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="next" value="{{ request.full_path }}">
+  <label class="sr-only" for="language">{{ t('Language') }}</label>
+  <select id="language" name="language" onchange="this.form.submit()" aria-label="{{ t('Language') }}">
+    {% for code, name in supported_languages.items() %}
+      <option value="{{ code }}" {% if current_language == code %}selected{% endif %}>{{ name }}</option>
+    {% endfor %}
+  </select>
+</form>

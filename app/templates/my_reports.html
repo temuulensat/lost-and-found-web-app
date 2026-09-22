@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('My Reports') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container browse-container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+        <a href="{{ url_for('reports.browse_items') }}">{{ t('Browse Items') }}</a>
+        <a href="{{ url_for('reports.my_reports') }}" aria-current="page">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% include '_account_controls.html' %}
+      </nav>
+
+      <h1>{{ t('My Reports') }}</h1>
+      <p class="intro">{{ t('Manage the lost and found reports you created.') }}</p>
+
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p class="message {{ category }}">{{ t(message) }}</p>
+      {% endfor %}
+
+      {% if items %}
+        <div class="item-list">
+          {% for item in items %}
+            <article class="item-card">
+              <header class="item-header">
+                <h2>{{ item['item_name'] }}</h2>
+                <span class="badge {{ item['report_type'] }}">{{ t(item['report_type']|title) }}</span>
+              </header>
+              {% if item['image_filename'] %}
+                <img class="report-photo" src="{{ url_for('reports.report_photo', filename=item['image_filename']) }}" alt="{{ t('Photo of') }} {{ item['item_name'] }}">
+              {% endif %}
+              <dl class="item-details">
+                <div><dt>{{ t('Category') }}</dt><dd>{{ t(item['category']) }}</dd></div>
+                <div><dt>{{ t('Color') }}</dt><dd>{{ t(item['color']) if item['color'] else t('Not specified') }}</dd></div>
+                <div><dt>{{ t('Location') }}</dt><dd>{{ item['location'] }}</dd></div>
+                <div><dt>{{ t('Date') }}</dt><dd><time datetime="{{ item['date'] }}">{{ item['date'] }}</time></dd></div>
+                <div><dt>{{ t('Status') }}</dt><dd>{{ t(item['status']|title) }}</dd></div>
+              </dl>
+              <h3>{{ t('Description') }}</h3>
+              <p>{{ item['description'] or t('No description provided.') }}</p>
+              <div class="management-actions">
+                <a class="edit-link" href="{{ url_for('reports.edit_item', item_id=item['id']) }}">{{ t('Edit') }}</a>
+                <form class="delete-form" method="post" action="{{ url_for('reports.delete_item', item_id=item['id']) }}" onsubmit="return confirm({{ t('Delete this report? This cannot be undone.')|tojson }});">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit">{{ t('Delete') }}</button>
+                </form>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <h2>{{ t('No reports yet') }}</h2>
+          <p>{{ t('Reports you create will appear here.') }}</p>
+          <a class="button-link" href="{{ url_for('reports.report_item') }}">{{ t('Report an item') }}</a>
+        </div>
+      {% endif %}
+    </main>
+  </body>
+</html>

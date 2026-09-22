@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Edit Report') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/location-selects.js') }}" defer></script>
+  </head>
+  <body>
+    <main class="container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+        <a href="{{ url_for('reports.browse_items') }}">{{ t('Browse Items') }}</a>
+        <a href="{{ url_for('reports.my_reports') }}" aria-current="page">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% include '_account_controls.html' %}
+      </nav>
+
+      <a class="back-link" href="{{ url_for('reports.my_reports') }}">&larr; {{ t('Back to My Reports') }}</a>
+      <h1>{{ t('Edit Report') }}</h1>
+
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p class="message {{ category }}">{{ t(message) }}</p>
+      {% endfor %}
+
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <fieldset>
+          <legend>{{ t('Report type') }}</legend>
+          {% set selected_type = request.form.get('report_type', item['report_type']) %}
+          <label class="choice"><input type="radio" name="report_type" value="lost" required {% if selected_type == 'lost' %}checked{% endif %}> {{ t('Lost') }}</label>
+          <label class="choice"><input type="radio" name="report_type" value="found" required {% if selected_type == 'found' %}checked{% endif %}> {{ t('Found') }}</label>
+        </fieldset>
+
+        <label for="item_name">{{ t('Item name') }}</label>
+        <input id="item_name" name="item_name" value="{{ request.form.get('item_name', item['item_name']) }}" required>
+        <label for="category">{{ t('Category') }}</label>
+        {% set selected_category = request.form.get('category', item['category']) %}
+        <select id="category" name="category" required>
+          <option value="">{{ t('Select a category') }}</option>
+          {% for option in ['Electronics', 'Bags', 'Wallets', 'Keys', 'Clothing', 'Jewelry', 'Documents/IDs', 'School items', 'Other'] %}
+            <option value="{{ option }}" {% if selected_category == option %}selected{% endif %}>{{ t(option) }}</option>
+          {% endfor %}
+        </select>
+        <label for="color">{{ t('Color') }}</label>
+        {% set selected_color = request.form.get('color', item['color'] or '') %}
+        <select id="color" name="color">
+          <option value="">{{ t('Select a color') }}</option>
+          {% for option in ['Black', 'White', 'Gray', 'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Pink', 'Brown', 'Gold', 'Silver', 'Multicolor', 'Other'] %}
+            <option value="{{ option }}" {% if selected_color == option %}selected{% endif %}>{{ t(option) }}</option>
+          {% endfor %}
+        </select>
+        <fieldset class="location-fields">
+          <legend>{{ t('Location') }}</legend>
+          <div class="location-grid">
+            <div>
+              <label for="country">{{ t('Country') }}</label>
+              {% set selected_country = request.form.get('country', item['country'] or '') %}
+              <select id="country" name="country" data-selected="{{ selected_country }}" required>
+                <option value="">{{ t('Select a country') }}</option>
+                {% for country in countries %}
+                  <option value="{{ country.name }}" data-code="{{ country.code }}" {% if selected_country == country.name %}selected{% endif %}>{{ country.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="region">{{ t('State / Province / Region') }}</label>
+              <select id="region" name="region" data-selected="{{ request.form.get('region', item['region'] or '') }}" data-placeholder="{{ t('Select a state or region') }}" data-loading="{{ t('Loading regions...') }}" required disabled>
+                <option value="">{{ t('Select a state or region') }}</option>
+              </select>
+            </div>
+            <div>
+              <label for="city">{{ t('City') }}</label>
+              <select id="city" name="city" data-selected="{{ request.form.get('city', item['city'] or '') }}" data-placeholder="{{ t('Select a city') }}" data-loading="{{ t('Loading cities...') }}" required disabled>
+                <option value="">{{ t('Select a city') }}</option>
+              </select>
+            </div>
+            <div>
+              <label for="area">{{ t('Area / Neighborhood') }}</label>
+              <select id="area" name="area" data-selected="{{ request.form.get('area', item['area'] or '') }}" data-placeholder="{{ t('Select an area') }}" data-loading="{{ t('Loading areas...') }}" required disabled>
+                <option value="">{{ t('Select an area') }}</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+        <label for="date">{{ t('Date') }}</label>
+        <input id="date" name="date" type="date" value="{{ request.form.get('date', item['date']) }}" required>
+        <label for="description">{{ t('Description') }}</label>
+        <textarea id="description" name="description" rows="5">{{ request.form.get('description', item['description'] or '') }}</textarea>
+        <label for="photo">{{ t('Replace photo') }} <span class="optional">{{ t('(optional)') }}</span></label>
+        {% if item['image_filename'] %}
+          <img class="edit-photo-preview" src="{{ url_for('reports.report_photo', filename=item['image_filename']) }}" alt="{{ t('Current photo') }}: {{ item['item_name'] }}">
+          <label class="choice"><input type="checkbox" name="remove_photo" value="yes"> {{ t('Remove current photo') }}</label>
+        {% endif %}
+        <input id="photo" name="photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+        <small>{{ t('Uploading a new photo replaces the current one. Maximum request size: 5 MB.') }}</small>
+        <label for="status">{{ t('Status') }}</label>
+        {% set selected_status = request.form.get('status', item['status']) %}
+        <select id="status" name="status" required>
+          <option value="open" {% if selected_status == 'open' %}selected{% endif %}>{{ t('Open') }}</option>
+          <option value="resolved" {% if selected_status == 'resolved' %}selected{% endif %}>{{ t('Resolved') }}</option>
+          <option value="closed" {% if selected_status == 'closed' %}selected{% endif %}>{{ t('Closed') }}</option>
+        </select>
+        <button type="submit">{{ t('Save changes') }}</button>
+      </form>
+    </main>
+  </body>
+</html>

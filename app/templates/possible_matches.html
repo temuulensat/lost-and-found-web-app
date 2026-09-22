@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Possible Matches') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container browse-container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+        <a href="{{ url_for('reports.browse_items') }}">{{ t('Browse Items') }}</a>
+        <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% include '_account_controls.html' %}
+      </nav>
+
+      <a class="back-link" href="{{ url_for('reports.browse_items') }}">&larr; {{ t('Back to Browse Items') }}</a>
+      <h1>{{ t('Possible Matches') }}</h1>
+      <p class="intro">{{ t('Found reports that may match your lost') }} <strong>{{ lost_item['item_name'] }}</strong>.</p>
+
+      <section class="match-summary" aria-labelledby="lost-item-heading">
+        <h2 id="lost-item-heading">{{ t('Lost item') }}</h2>
+        {% if lost_item['image_filename'] %}
+          <img class="report-photo" src="{{ url_for('reports.report_photo', filename=lost_item['image_filename']) }}" alt="{{ t('Photo of') }} {{ lost_item['item_name'] }}">
+        {% endif %}
+        <dl class="item-details">
+          <div><dt>{{ t('Item') }}</dt><dd>{{ lost_item['item_name'] }}</dd></div>
+          <div><dt>{{ t('Category') }}</dt><dd>{{ t(lost_item['category']) }}</dd></div>
+          <div><dt>{{ t('Color') }}</dt><dd>{{ t(lost_item['color']) if lost_item['color'] else t('Not specified') }}</dd></div>
+          <div><dt>{{ t('Location') }}</dt><dd>{{ lost_item['location'] }}</dd></div>
+          <div><dt>{{ t('Date') }}</dt><dd><time datetime="{{ lost_item['date'] }}">{{ lost_item['date'] }}</time></dd></div>
+        </dl>
+      </section>
+
+      {% if matches %}
+        <div class="item-list">
+          {% for item in matches %}
+            <article class="item-card">
+              <header class="item-header">
+                <h2>{{ item['item_name'] }}</h2>
+                <div class="match-labels">
+                  <span class="match-percentage">{{ item['match_score'] }}% {{ t('Match') }}</span>
+                  <span class="badge found">{{ t('Found') }}</span>
+                </div>
+              </header>
+              {% if item['match_reasons'] %}
+                <p class="match-explanation">
+                  {% for reason in item['match_reasons'] %}
+                    {% if reason['values'].get('days') is not none %}
+                      {{ t(reason['key']).format(days=reason['values']['days']) }}
+                    {% else %}
+                      {{ t(reason['key']) }}
+                    {% endif %}{% if not loop.last %} &bull; {% endif %}
+                  {% endfor %}
+                </p>
+              {% endif %}
+
+              {% if item['image_filename'] %}
+                <img class="report-photo" src="{{ url_for('reports.report_photo', filename=item['image_filename']) }}" alt="{{ t('Photo of') }} {{ item['item_name'] }}">
+              {% endif %}
+
+              <dl class="item-details">
+                <div><dt>{{ t('Category') }}</dt><dd>{{ t(item['category']) }}</dd></div>
+                <div><dt>{{ t('Color') }}</dt><dd>{{ t(item['color']) if item['color'] else t('Not specified') }}</dd></div>
+                <div><dt>{{ t('Location') }}</dt><dd>{{ item['location'] }}</dd></div>
+                <div><dt>{{ t('Date') }}</dt><dd><time datetime="{{ item['date'] }}">{{ item['date'] }}</time></dd></div>
+                <div><dt>{{ t('Status') }}</dt><dd>{{ t(item['status']|title) }}</dd></div>
+              </dl>
+
+              <h3>{{ t('Description') }}</h3>
+              <p>{{ item['description'] or t('No description provided.') }}</p>
+
+              {% if item['can_start_conversation'] %}
+                <form class="message-finder-form" method="post" action="{{ url_for('messaging.start_conversation', lost_item_id=lost_item['id'], found_item_id=item['id']) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit">{% if g.user['id'] == lost_item['user_id'] %}{{ t('Message Finder') }}{% else %}{{ t('Message Lost-item Owner') }}{% endif %}</button>
+                </form>
+              {% elif g.user and item['user_id'] == g.user['id'] %}
+                <p class="match-note">{{ t('This found report is yours, so messaging is not available.') }}</p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <h2>{{ t('No possible matches yet') }}</h2>
+          <p>{{ t('No found reports currently match the category, color, location, and seven-day date range.') }}</p>
+        </div>
+      {% endif %}
+    </main>
+  </body>
+</html>

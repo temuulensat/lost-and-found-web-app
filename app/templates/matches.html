@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="{{ current_language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ t('Matches') }} | {{ t('Lost & Found') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <main class="container browse-container">
+      <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+        <a href="{{ url_for('reports.browse_items') }}">{{ t('Browse Items') }}</a>
+        <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}" aria-current="page">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% include '_account_controls.html' %}
+      </nav>
+
+      <h1>{{ t('Matches') }}</h1>
+      <p class="intro">{{ t('Possible matches related to your lost and found reports.') }}</p>
+
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+        <p class="message {{ category }}">{{ t(message) }}</p>
+      {% endfor %}
+
+      {% if notifications %}
+        <section class="match-events" aria-label="Match notifications">
+          {% for notification in notifications %}
+            <p>{{ t(notification['message']) }}</p>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if matches %}
+        <div class="match-list">
+          {% for match in matches %}
+            <article class="match-card">
+              <header class="item-header">
+                <h2>{{ match['lost_item_name'] }} / {{ match['found_item_name'] }}</h2>
+                <div class="match-labels">
+                  <span class="match-percentage">{{ match['match_score'] }}% {{ t('Match') }}</span>
+                  <span class="match-status {{ match['match_status']|lower|replace(' ', '-') }}">{{ t(match['match_status']) }}</span>
+                </div>
+              </header>
+              {% if match['match_reasons'] %}
+                <p class="match-explanation">
+                  {% for reason in match['match_reasons'] %}
+                    {% if reason['values'].get('days') is not none %}
+                      {{ t(reason['key']).format(days=reason['values']['days']) }}
+                    {% else %}
+                      {{ t(reason['key']) }}
+                    {% endif %}{% if not loop.last %} &bull; {% endif %}
+                  {% endfor %}
+                </p>
+              {% endif %}
+              <p class="match-notification">{{ t(match['notification_message']) }}</p>
+              <div class="match-pair">
+                <section>
+                  <h3>{{ t('Lost item') }}</h3>
+                  {% if match['lost_image_filename'] %}<img class="match-photo" src="{{ url_for('reports.report_photo', filename=match['lost_image_filename']) }}" alt="{{ t('Photo of') }} {{ match['lost_item_name'] }}">{% endif %}
+                  <p><strong>{{ match['lost_item_name'] }}</strong></p>
+                  <p><time datetime="{{ match['lost_date'] }}">{{ match['lost_date'] }}</time></p>
+                  <p>{{ match['lost_location'] }}</p>
+                </section>
+                <section>
+                  <h3>{{ t('Found item') }}</h3>
+                  {% if match['found_image_filename'] %}<img class="match-photo" src="{{ url_for('reports.report_photo', filename=match['found_image_filename']) }}" alt="{{ t('Photo of') }} {{ match['found_item_name'] }}">{% endif %}
+                  <p><strong>{{ match['found_item_name'] }}</strong></p>
+                  <p><time datetime="{{ match['found_date'] }}">{{ match['found_date'] }}</time></p>
+                  <p>{{ match['found_location'] }}</p>
+                </section>
+              </div>
+              <div class="match-actions">
+                <a class="matches-link" href="{{ url_for('reports.possible_matches', item_id=match['lost_item_id']) }}">{{ t('View match details') }}</a>
+                <form class="message-finder-form" method="post" action="{{ url_for('messaging.start_conversation', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id']) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit">{% if g.user['id'] == match['lost_user_id'] %}{{ t('Message Finder') }}{% else %}{{ t('Message Lost-item Owner') }}{% endif %}</button>
+                </form>
+              </div>
+
+              <div class="claim-actions">
+                {% if match['match_status'] == 'Possible Match' %}
+                  <form method="post" action="{{ url_for('matches.claim_match', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">{{ t('Claim Match') }}</button>
+                  </form>
+                {% elif match['match_status'] == 'Claim Pending' and match['claimant_id'] != g.user['id'] %}
+                  <form method="post" action="{{ url_for('matches.respond_to_claim', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id'], decision='accept') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">{{ t('Accept') }}</button>
+                  </form>
+                  <form method="post" action="{{ url_for('matches.respond_to_claim', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id'], decision='reject') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="secondary-button" type="submit">{{ t('Reject') }}</button>
+                  </form>
+                {% elif match['match_status'] == 'Claim Pending' %}
+                  <span class="pending-note">{{ t('Waiting for the other user to respond.') }}</span>
+                {% elif match['match_status'] == 'Confirmed' %}
+                  <form method="post" action="{{ url_for('matches.mark_returned', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id']) }}" onsubmit="return confirm({{ t('Mark this item as returned and close both reports?')|tojson }});">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">{{ t('Mark Returned') }}</button>
+                  </form>
+                {% else %}
+                  <span class="returned-note">{{ t('This item has been returned.') }}</span>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <h2>{{ t('No matches yet') }}</h2>
+          <p>{{ t('Possible matches for your lost and found reports will appear here.') }}</p>
+        </div>
+      {% endif %}
+    </main>
+  </body>
+</html>

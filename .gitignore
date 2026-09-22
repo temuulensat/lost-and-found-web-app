@@ -1,0 +1,57 @@
+# Python bytecode, caches, test output, and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local environment variables, credentials, and private keys
+.env
+.env.*
+*.env
+*.env.local
+*.env.production
+*.env.development
+*.env.test
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials.json
+secrets.json
+secrets.yaml
+secrets.yml
+secrets.toml
+
+# Local SQLite databases and their journals (location data is rebuilt during deployment)
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-*
+*.sqlite3-*
+*.db-*
+
+# User reports, uploaded photos, and backups
+instance/*
+!instance/.gitkeep
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+uploads/
+backups/
+*.tar.gz
+
+# Keep the non-secret deployment example
+!deploy/oci/lost-found.env.example
