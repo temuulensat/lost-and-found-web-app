@@ -174,16 +174,11 @@ class MatchingFlowTests(unittest.TestCase):
         self.assertIn("Message User", body)
         self.assertIn('href="/login"', body)
 
-    def test_demo_visitors_can_explore_report_form_and_location_selectors(self):
+    def test_demo_visitors_are_redirected_from_report_item_to_login(self):
         form_response = self.client.get("/report")
 
-        self.assertEqual(form_response.status_code, 200)
-        form_body = form_response.data.decode()
-        self.assertIn("Report an item", form_body)
-        self.assertIn("Report type", form_body)
-        self.assertIn("Location", form_body)
-        self.assertIn("Log In", form_body)
-        self.assertIn("Sign Up", form_body)
+        self.assertEqual(form_response.status_code, 302)
+        self.assertIn("/login", form_response.headers["Location"])
 
         regions_response = self.client.get(f"/locations/regions?country={COUNTRY}")
         self.assertEqual(regions_response.status_code, 200)
@@ -210,7 +205,7 @@ class MatchingFlowTests(unittest.TestCase):
     def test_demo_keeps_protected_actions_login_gated(self):
         self.make_matching_reports()
 
-        protected_paths = ("/my-reports", "/matches", "/conversations")
+        protected_paths = ("/report", "/my-reports", "/matches", "/conversations")
         for path in protected_paths:
             response = self.client.get(path)
             self.assertEqual(response.status_code, 302)

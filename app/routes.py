@@ -464,12 +464,9 @@ def browse_items():
 
 
 @bp.route("/report", methods=("GET", "POST"))
+@login_required
 def report_item():
     if request.method == "POST":
-        if g.user is None:
-            flash("Log in to continue.", "error")
-            return redirect(url_for("auth.login"))
-
         report_type = request.form.get("report_type", "").strip()
         item_name = request.form.get("item_name", "").strip()
         category = request.form.get("category", "").strip()
