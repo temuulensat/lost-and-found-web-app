@@ -10,11 +10,13 @@ DATA_DIR = Path(__file__).parent
 DATABASE = DATA_DIR / "locations.sqlite"
 
 
-def build():
-    if DATABASE.exists():
-        DATABASE.unlink()
+def build(database=DATABASE):
+    database = Path(database)
+    database.parent.mkdir(parents=True, exist_ok=True)
+    if database.exists():
+        database.unlink()
 
-    db = sqlite3.connect(DATABASE)
+    db = sqlite3.connect(database)
     db.executescript(
         """
         CREATE TABLE countries (code TEXT PRIMARY KEY, name TEXT NOT NULL);

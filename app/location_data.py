@@ -1,14 +1,32 @@
 import sqlite3
 from pathlib import Path
 
+from flask import current_app, has_app_context
 
-LOCATION_DATABASE = Path(__file__).parent / "data" / "locations.sqlite"
+PACKAGED_LOCATION_DATABASE = Path(__file__).parent / "data" / "locations.sqlite"
 FALLBACK_OPTION = "Not available"
 OTHER_AREA = "Other / Not listed"
 
 
+def _runtime_location_database():
+    if PACKAGED_LOCATION_DATABASE.exists():
+        return PACKAGED_LOCATION_DATABASE
+
+    if has_app_context():
+        database = Path(current_app.config["LOCATION_DATABASE"])
+    else:
+        database = PACKAGED_LOCATION_DATABASE
+
+    if not database.exists():
+        from .data.build_locations import build
+
+        build(database)
+    return database
+
+
 def _connect():
-    connection = sqlite3.connect(f"file:{LOCATION_DATABASE}?mode=ro", uri=True)
+    database = _runtime_location_database()
+    connection = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
     connection.row_factory = sqlite3.Row
     return connection
 

@@ -14,6 +14,7 @@ def create_app(test_config=None) -> Flask:
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY"),
         DATABASE=data_dir / "lost_and_found.sqlite",
+        LOCATION_DATABASE=data_dir / "locations.sqlite",
         MAX_CONTENT_LENGTH=5 * 1024 * 1024,
         UPLOAD_FOLDER=data_dir / "uploads",
         TRUSTED_HOSTS=trusted_hosts.split(",") if trusted_hosts else None,

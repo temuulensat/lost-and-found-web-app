@@ -4,11 +4,13 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 import os
+import sqlite3
 
 from PIL import Image, PngImagePlugin
 
 from app import create_app
 from app.db import get_db
+from app import location_data
 
 
 class SecurityTests(TestCase):
@@ -61,10 +63,48 @@ class SecurityTests(TestCase):
         }):
             app = create_app()
         self.assertEqual(Path(app.config['DATABASE']), data_dir / 'lost_and_found.sqlite')
+        self.assertEqual(Path(app.config['LOCATION_DATABASE']), data_dir / 'locations.sqlite')
         self.assertEqual(Path(app.config['UPLOAD_FOLDER']), data_dir / 'uploads')
         self.assertTrue(app.config['SESSION_COOKIE_SECURE'])
         self.assertEqual(app.config['TRUSTED_HOSTS'], ['lost.example.com'])
         self.assertTrue((data_dir / 'lost_and_found.sqlite').exists())
+
+    def test_location_database_builds_at_runtime_when_packaged_database_is_missing(self):
+        runtime_location_db = Path(self.tmp.name) / 'runtime-locations.sqlite'
+
+        def fake_build(database):
+            db = sqlite3.connect(database)
+            db.executescript(
+                """
+                CREATE TABLE countries (code TEXT PRIMARY KEY, name TEXT NOT NULL);
+                CREATE TABLE regions (
+                    country_code TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    PRIMARY KEY (country_code, code)
+                );
+                CREATE TABLE cities (
+                    country_code TEXT NOT NULL,
+                    region_code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    geoname_id INTEGER NOT NULL,
+                    population INTEGER NOT NULL,
+                    PRIMARY KEY (country_code, region_code, geoname_id)
+                );
+                INSERT INTO countries (code, name) VALUES ('US', 'United States');
+                """
+            )
+            db.close()
+
+        self.app.config['LOCATION_DATABASE'] = runtime_location_db
+        with self.app.app_context():
+            with patch.object(location_data, 'PACKAGED_LOCATION_DATABASE', Path(self.tmp.name) / 'missing.sqlite'):
+                with patch('app.data.build_locations.build', side_effect=fake_build):
+                    self.assertEqual(
+                        location_data.location_options_country(),
+                        [{'code': 'US', 'name': 'United States'}],
+                    )
+        self.assertTrue(runtime_location_db.exists())
 
     def test_first_public_signup_is_not_admin(self):
         self.signup()
