@@ -174,11 +174,16 @@ class MatchingFlowTests(unittest.TestCase):
         self.assertIn("Message User", body)
         self.assertIn('href="/login"', body)
 
-    def test_demo_visitors_are_redirected_from_report_item_to_login(self):
+    def test_demo_visitors_can_explore_report_form_and_location_selectors(self):
         form_response = self.client.get("/report")
 
-        self.assertEqual(form_response.status_code, 302)
-        self.assertIn("/login", form_response.headers["Location"])
+        self.assertEqual(form_response.status_code, 200)
+        form_body = form_response.data.decode()
+        self.assertIn("Report an item", form_body)
+        self.assertIn("Report type", form_body)
+        self.assertIn("Location", form_body)
+        self.assertIn("Log In", form_body)
+        self.assertIn("Sign Up", form_body)
 
         regions_response = self.client.get(f"/locations/regions?country={COUNTRY}")
         self.assertEqual(regions_response.status_code, 200)
@@ -202,14 +207,35 @@ class MatchingFlowTests(unittest.TestCase):
         self.assertEqual(submit_response.status_code, 302)
         self.assertIn("/login", submit_response.headers["Location"])
 
-    def test_demo_keeps_protected_actions_login_gated(self):
+    def test_demo_visitors_can_open_account_feature_pages(self):
         self.make_matching_reports()
 
-        protected_paths = ("/report", "/my-reports", "/matches", "/conversations")
-        for path in protected_paths:
+        expected_headings = {
+            "/my-reports": "My Reports",
+            "/matches": "Matches",
+            "/conversations": "Conversations",
+        }
+        for path, heading in expected_headings.items():
             response = self.client.get(path)
-            self.assertEqual(response.status_code, 302)
-            self.assertIn("/login", response.headers["Location"])
+            self.assertEqual(response.status_code, 200)
+            body = response.data.decode()
+            self.assertIn(heading, body)
+            self.assertIn("Report Item", body)
+            self.assertIn("Browse Items", body)
+            self.assertIn("Log In", body)
+            self.assertIn("Sign Up", body)
+
+        matches_body = self.client.get("/matches").data.decode()
+        self.assertIn("% Match", matches_body)
+        self.assertIn("Claim Match", matches_body)
+        self.assertIn("Message User", matches_body)
+
+    def test_demo_keeps_identity_actions_login_gated(self):
+        self.make_matching_reports()
+
+        response = self.client.get("/conversations/1")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login", response.headers["Location"])
 
     def test_landing_links_to_browse_for_demo(self):
         response = self.client.get("/")

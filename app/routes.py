@@ -260,8 +260,10 @@ def edit_item(item_id):
 
 
 @bp.route("/my-reports")
-@login_required
 def my_reports():
+    if g.user is None:
+        return render_template("my_reports.html", items=[])
+
     items = get_db().execute(
         "SELECT * FROM items WHERE user_id = ? ORDER BY id DESC",
         (g.user["id"],),
@@ -464,9 +466,12 @@ def browse_items():
 
 
 @bp.route("/report", methods=("GET", "POST"))
-@login_required
 def report_item():
     if request.method == "POST":
+        if g.user is None:
+            flash("Log in to continue.", "error")
+            return redirect(url_for("auth.login"))
+
         report_type = request.form.get("report_type", "").strip()
         item_name = request.form.get("item_name", "").strip()
         category = request.form.get("category", "").strip()

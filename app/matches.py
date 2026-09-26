@@ -54,6 +54,38 @@ MATCH_SELECT_SQL = """
       AND (lost.user_id = ? OR found.user_id = ?)
 """.format(status_label=STATUS_LABEL_SQL)
 
+PUBLIC_MATCH_SELECT_SQL = """
+    SELECT lost.id AS lost_item_id, lost.user_id AS lost_user_id,
+           lost.item_name AS lost_item_name, lost.category AS lost_category,
+           lost.color AS lost_color, lost.location AS lost_location,
+           lost.country AS lost_country, lost.region AS lost_region,
+           lost.city AS lost_city, lost.area AS lost_area,
+           lost.date AS lost_date, lost.description AS lost_description,
+           lost.image_filename AS lost_image_filename,
+           found.id AS found_item_id, found.user_id AS found_user_id,
+           found.item_name AS found_item_name, found.category AS found_category,
+           found.color AS found_color, found.location AS found_location,
+           found.country AS found_country, found.region AS found_region,
+           found.city AS found_city, found.area AS found_area,
+           found.date AS found_date, found.description AS found_description,
+           found.image_filename AS found_image_filename,
+           {status_label} AS match_status,
+           claim.status AS claim_status, claim.claimant_id, claim.claim_round,
+           'Possible match found for your lost item.' AS notification_message,
+           0 AS is_new
+    FROM items AS lost
+    JOIN items AS found
+      ON found.report_type = 'found'
+     AND found.user_id IS NOT NULL
+     AND found.user_id != lost.user_id
+    LEFT JOIN match_claims AS claim
+      ON claim.lost_item_id = lost.id AND claim.found_item_id = found.id
+    WHERE lost.report_type = 'lost'
+      AND lost.status = 'open'
+      AND found.status = 'open'
+      AND lost.user_id IS NOT NULL
+""".format(status_label=STATUS_LABEL_SQL)
+
 
 def _lost_from_match(row):
     return {
@@ -115,6 +147,17 @@ def _user_match_rows(db):
             -item["found_item_id"],
         )
     )
+    return matches
+
+
+def _public_match_rows(db):
+    rows = db.execute(PUBLIC_MATCH_SELECT_SQL).fetchall()
+    matches = []
+    for row in rows:
+        scored = _is_visible_match(row)
+        if scored is not None:
+            matches.append(scored)
+    matches.sort(key=lambda item: (-item["match_score"], -item["found_item_id"]))
     return matches
 
 
@@ -310,9 +353,15 @@ def mark_returned(lost_item_id, found_item_id):
 
 
 @bp.route("/matches")
-@login_required
 def match_list():
     db = get_db()
+    if g.user is None:
+        return render_template(
+            "matches.html",
+            matches=_public_match_rows(db),
+            notifications=[],
+        )
+
     matches = _user_match_rows(db)
 
     notifications = db.execute(

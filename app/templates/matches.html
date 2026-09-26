@@ -73,14 +73,24 @@
               </div>
               <div class="match-actions">
                 <a class="matches-link" href="{{ url_for('reports.possible_matches', item_id=match['lost_item_id']) }}">{{ t('View match details') }}</a>
-                <form class="message-finder-form" method="post" action="{{ url_for('messaging.start_conversation', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id']) }}">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit">{% if g.user['id'] == match['lost_user_id'] %}{{ t('Message Finder') }}{% else %}{{ t('Message Lost-item Owner') }}{% endif %}</button>
-                </form>
+                {% if g.user %}
+                  <form class="message-finder-form" method="post" action="{{ url_for('messaging.start_conversation', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id']) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">{% if g.user['id'] == match['lost_user_id'] %}{{ t('Message Finder') }}{% else %}{{ t('Message Lost-item Owner') }}{% endif %}</button>
+                  </form>
+                {% else %}
+                  <a class="button-link" href="{{ url_for('auth.login') }}">{{ t('Message User') }}</a>
+                {% endif %}
               </div>
 
               <div class="claim-actions">
-                {% if match['match_status'] == 'Possible Match' %}
+                {% if not g.user and match['match_status'] == 'Possible Match' %}
+                  <a class="button-link" href="{{ url_for('auth.login') }}">{{ t('Claim Match') }}</a>
+                {% elif not g.user and match['match_status'] == 'Claim Pending' %}
+                  <span class="pending-note">{{ t('Waiting for the other user to respond.') }}</span>
+                {% elif not g.user and match['match_status'] == 'Confirmed' %}
+                  <a class="button-link" href="{{ url_for('auth.login') }}">{{ t('Mark Returned') }}</a>
+                {% elif match['match_status'] == 'Possible Match' %}
                   <form method="post" action="{{ url_for('matches.claim_match', lost_item_id=match['lost_item_id'], found_item_id=match['found_item_id']) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit">{{ t('Claim Match') }}</button>

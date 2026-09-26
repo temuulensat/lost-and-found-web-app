@@ -146,8 +146,10 @@ def start_conversation(lost_item_id, found_item_id):
 
 
 @bp.route("/conversations")
-@login_required
 def conversations():
+    if g.user is None:
+        return render_template("conversations.html", conversations=[])
+
     rows = get_db().execute(
         """
         SELECT c.id, c.created_at, lost.item_name AS lost_item_name,
