@@ -78,6 +78,10 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit">{% if g.user['id'] == lost_item['user_id'] %}{{ t('Message Finder') }}{% else %}{{ t('Message Lost-item Owner') }}{% endif %}</button>
                 </form>
+              {% elif not g.user %}
+                <p class="message-finder-form">
+                  <a class="button-link" href="{{ url_for('auth.login') }}">{{ t('Message User') }}</a>
+                </p>
               {% elif g.user and item['user_id'] == g.user['id'] %}
                 <p class="match-note">{{ t('This found report is yours, so messaging is not available.') }}</p>
               {% endif %}

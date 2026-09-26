@@ -14,6 +14,8 @@
       <p class="landing-intro">{{ t('Report lost or found belongings, discover possible matches, and connect privately with the right person.') }}</p>
       <div class="landing-actions">
         <a class="landing-button primary" href="{{ url_for('reports.browse_items') }}">{{ t('Browse Items') }}</a>
+        <a class="landing-button secondary" href="{{ url_for('auth.signup') }}">{{ t('Sign Up') }}</a>
+        <a class="landing-button secondary" href="{{ url_for('auth.login') }}">{{ t('Log In') }}</a>
       </div>
       {% include '_language_switcher.html' %}
     </main>

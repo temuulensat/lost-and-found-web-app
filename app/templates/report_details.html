@@ -9,13 +9,11 @@
   <body>
     <main class="container browse-container">
       <nav aria-label="Main navigation">
+        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
         <a href="{{ url_for('reports.browse_items') }}" aria-current="page">{{ t('Browse Items') }}</a>
-        {% if g.user %}
-          <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
-          <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
-          <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
-          <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
-        {% endif %}
+        <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
+        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
         {% include '_account_controls.html' %}
       </nav>
 
@@ -72,11 +70,23 @@
           <p>{{ item['description'] or t('No description provided.') }}</p>
         </section>
 
+        {% if item['report_type'] == 'lost' and item['status'] == 'open' %}
+          <p class="detail-message-form">
+            <a class="matches-link" href="{{ url_for('reports.possible_matches', item_id=item['id']) }}">{{ t('View possible matches') }}</a>
+          </p>
+        {% endif %}
+
         {% if can_message_user %}
-          <form class="message-finder-form detail-message-form" method="post" action="{{ url_for('messaging.start_conversation', lost_item_id=best_match['lost_item_id'], found_item_id=best_match['found_item_id']) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit">{{ t('Message User') }}</button>
-          </form>
+          {% if g.user %}
+            <form class="message-finder-form detail-message-form" method="post" action="{{ url_for('messaging.start_conversation', lost_item_id=best_match['lost_item_id'], found_item_id=best_match['found_item_id']) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">{{ t('Message User') }}</button>
+            </form>
+          {% else %}
+            <p class="detail-message-form">
+              <a class="button-link" href="{{ url_for('auth.login') }}">{{ t('Message User') }}</a>
+            </p>
+          {% endif %}
         {% endif %}
       </article>
     </main>

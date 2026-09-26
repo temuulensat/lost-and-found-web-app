@@ -107,7 +107,6 @@ def report_photo(filename):
 
 
 @bp.get("/locations/regions")
-@login_required
 def location_regions():
     return jsonify(
         translated_location_options(location_options_regions(request.args.get("country", "")))
@@ -115,7 +114,6 @@ def location_regions():
 
 
 @bp.get("/locations/cities")
-@login_required
 def location_cities():
     return jsonify(
         translated_location_options(
@@ -127,7 +125,6 @@ def location_cities():
 
 
 @bp.get("/locations/areas")
-@login_required
 def location_areas():
     return jsonify(
         translated_location_options(
@@ -273,7 +270,6 @@ def my_reports():
 
 
 @bp.route("/items/<int:item_id>/matches")
-@login_required
 def possible_matches(item_id):
     db = get_db()
     current_user_id = g.user["id"] if g.user else None
@@ -403,7 +399,7 @@ def item_details(item_id):
         "report_details.html",
         item=item,
         best_match=best_match,
-        can_message_user=best_match is not None and g.user is not None,
+        can_message_user=best_match is not None,
     )
 
 
@@ -468,9 +464,12 @@ def browse_items():
 
 
 @bp.route("/report", methods=("GET", "POST"))
-@login_required
 def report_item():
     if request.method == "POST":
+        if g.user is None:
+            flash("Log in to continue.", "error")
+            return redirect(url_for("auth.login"))
+
         report_type = request.form.get("report_type", "").strip()
         item_name = request.form.get("item_name", "").strip()
         category = request.form.get("category", "").strip()

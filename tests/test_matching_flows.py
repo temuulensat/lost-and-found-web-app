@@ -120,7 +120,7 @@ class MatchingFlowTests(unittest.TestCase):
         self.assertIn('href="/items/2"', body)
         self.assertIn("View details", body)
 
-    def test_demo_visitors_can_browse_without_auth_links(self):
+    def test_demo_visitors_can_browse_with_full_navigation(self):
         self.make_matching_reports()
 
         response = self.client.get("/items")
@@ -129,10 +129,14 @@ class MatchingFlowTests(unittest.TestCase):
         body = response.data.decode()
         self.assertIn("Lost &amp; Found Feed", body)
         self.assertIn('href="/items/1"', body)
-        self.assertNotIn("Log In", body)
-        self.assertNotIn("Sign Up", body)
+        self.assertIn("Report Item", body)
+        self.assertIn("My Reports", body)
+        self.assertIn("Matches", body)
+        self.assertIn("Conversations", body)
+        self.assertIn("Log In", body)
+        self.assertIn("Sign Up", body)
 
-    def test_demo_visitors_can_view_details_without_message_action(self):
+    def test_demo_visitors_can_view_details_with_login_message_action(self):
         self.make_matching_reports()
 
         response = self.client.get("/items/1")
@@ -141,14 +145,72 @@ class MatchingFlowTests(unittest.TestCase):
         body = response.data.decode()
         self.assertIn("Black leather wallet", body)
         self.assertIn("% Match", body)
-        self.assertNotIn("Message User", body)
-        self.assertNotIn("Log In", body)
-        self.assertNotIn("Sign Up", body)
+        self.assertIn("Message User", body)
+        self.assertIn('href="/login"', body)
+        self.assertIn("Report Item", body)
+        self.assertIn("My Reports", body)
+        self.assertIn("Matches", body)
+        self.assertIn("Conversations", body)
+        self.assertIn("Log In", body)
+        self.assertIn("Sign Up", body)
+        self.assertIn("View possible matches", body)
+
+    def test_demo_visitors_can_view_possible_matches_read_only(self):
+        self.make_matching_reports()
+
+        response = self.client.get("/items/1/matches")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.data.decode()
+        self.assertIn("Possible Matches", body)
+        self.assertIn("% Match", body)
+        self.assertIn("Same category", body)
+        self.assertIn("Report Item", body)
+        self.assertIn("My Reports", body)
+        self.assertIn("Matches", body)
+        self.assertIn("Conversations", body)
+        self.assertIn("Log In", body)
+        self.assertIn("Sign Up", body)
+        self.assertIn("Message User", body)
+        self.assertIn('href="/login"', body)
+
+    def test_demo_visitors_can_explore_report_form_and_location_selectors(self):
+        form_response = self.client.get("/report")
+
+        self.assertEqual(form_response.status_code, 200)
+        form_body = form_response.data.decode()
+        self.assertIn("Report an item", form_body)
+        self.assertIn("Report type", form_body)
+        self.assertIn("Location", form_body)
+        self.assertIn("Log In", form_body)
+        self.assertIn("Sign Up", form_body)
+
+        regions_response = self.client.get(f"/locations/regions?country={COUNTRY}")
+        self.assertEqual(regions_response.status_code, 200)
+        self.assertIsInstance(regions_response.json, list)
+
+        submit_response = self.post(
+            "/report",
+            data={
+                "report_type": "lost",
+                "item_name": "Demo wallet",
+                "category": "Wallets",
+                "color": "Black",
+                "country": COUNTRY,
+                "region": REGION,
+                "city": CITY,
+                "area": AREA,
+                "date": "2026-09-01",
+                "description": "Demo report",
+            },
+        )
+        self.assertEqual(submit_response.status_code, 302)
+        self.assertIn("/login", submit_response.headers["Location"])
 
     def test_demo_keeps_protected_actions_login_gated(self):
         self.make_matching_reports()
 
-        protected_paths = ("/report", "/my-reports", "/matches", "/conversations")
+        protected_paths = ("/my-reports", "/matches", "/conversations")
         for path in protected_paths:
             response = self.client.get(path)
             self.assertEqual(response.status_code, 302)
@@ -160,8 +222,8 @@ class MatchingFlowTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.data.decode()
         self.assertIn('href="/items"', body)
-        self.assertNotIn("Log In", body)
-        self.assertNotIn("Sign Up", body)
+        self.assertIn("Log In", body)
+        self.assertIn("Sign Up", body)
 
     def test_report_details_show_fields_match_and_message_action(self):
         self.make_matching_reports()

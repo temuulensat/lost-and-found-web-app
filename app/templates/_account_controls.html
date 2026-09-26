@@ -6,5 +6,8 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit">{{ t('Log Out') }}</button>
     </form>
+  {% else %}
+    <a href="{{ url_for('auth.login') }}">{{ t('Log In') }}</a>
+    <a href="{{ url_for('auth.signup') }}">{{ t('Sign Up') }}</a>
   {% endif %}
 </div>
