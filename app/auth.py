@@ -24,6 +24,9 @@ def load_logged_in_user():
 def enforce_login_gate():
     public_endpoints = {
         "reports.landing",
+        "reports.browse_items",
+        "reports.item_details",
+        "reports.report_photo",
         "auth.login",
         "auth.signup",
         "localization.set_language",

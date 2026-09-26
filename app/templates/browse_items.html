@@ -9,11 +9,13 @@
   <body>
     <main class="container browse-container">
       <nav aria-label="Main navigation">
-        <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
         <a href="{{ url_for('reports.browse_items') }}" aria-current="page">{{ t('Browse Items') }}</a>
-        <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
-        <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
-        <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% if g.user %}
+          <a href="{{ url_for('reports.report_item') }}">{{ t('Report Item') }}</a>
+          <a href="{{ url_for('reports.my_reports') }}">{{ t('My Reports') }}</a>
+          <a href="{{ url_for('matches.match_list') }}">{{ t('Matches') }}{% if unseen_match_count %} <span class="notification-badge">{{ unseen_match_count }}</span>{% endif %}</a>
+          <a href="{{ url_for('messaging.conversations') }}">{{ t('Conversations') }}{% if unread_message_count %} <span class="notification-badge">{{ unread_message_count }}</span>{% endif %}</a>
+        {% endif %}
         {% include '_account_controls.html' %}
       </nav>
 
@@ -118,7 +120,9 @@
           {% else %}
             <h2>{{ t('No reports yet') }}</h2>
             <p>{{ t('Submitted lost and found reports will appear here.') }}</p>
-            <a class="button-link" href="{{ url_for('reports.report_item') }}">{{ t('Report an item') }}</a>
+            {% if g.user %}
+              <a class="button-link" href="{{ url_for('reports.report_item') }}">{{ t('Report an item') }}</a>
+            {% endif %}
           {% endif %}
         </div>
       {% endif %}

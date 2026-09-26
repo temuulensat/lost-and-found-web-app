@@ -102,7 +102,6 @@ def landing():
 
 
 @bp.get("/report-photos/<path:filename>")
-@login_required
 def report_photo(filename):
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
 
@@ -324,11 +323,17 @@ def scored_detail_matches(db, item):
     if item["status"] != "open":
         return []
 
+    current_user_id = g.user["id"] if g.user else None
     if item["report_type"] == "lost":
-        if item["user_id"] == g.user["id"]:
+        if current_user_id is None:
+            owner_condition = "1 = 1"
+            parameters = ()
+        elif item["user_id"] == current_user_id:
             owner_condition = "user_id IS NOT NULL AND user_id != ?"
+            parameters = (current_user_id,)
         else:
             owner_condition = "user_id = ?"
+            parameters = (current_user_id,)
         rows = db.execute(
             f"""
             SELECT *
@@ -337,14 +342,19 @@ def scored_detail_matches(db, item):
               AND status = 'open'
               AND {owner_condition}
             """,
-            (g.user["id"],),
+            parameters,
         ).fetchall()
         pairs = ((item, row) for row in rows)
     else:
-        if item["user_id"] == g.user["id"]:
+        if current_user_id is None:
+            owner_condition = "1 = 1"
+            parameters = ()
+        elif item["user_id"] == current_user_id:
             owner_condition = "user_id IS NOT NULL AND user_id != ?"
+            parameters = (current_user_id,)
         else:
             owner_condition = "user_id = ?"
+            parameters = (current_user_id,)
         rows = db.execute(
             f"""
             SELECT *
@@ -353,7 +363,7 @@ def scored_detail_matches(db, item):
               AND status = 'open'
               AND {owner_condition}
             """,
-            (g.user["id"],),
+            parameters,
         ).fetchall()
         pairs = ((row, item) for row in rows)
 
@@ -373,7 +383,6 @@ def scored_detail_matches(db, item):
 
 
 @bp.route("/items/<int:item_id>")
-@login_required
 def item_details(item_id):
     db = get_db()
     item = db.execute(
@@ -394,12 +403,11 @@ def item_details(item_id):
         "report_details.html",
         item=item,
         best_match=best_match,
-        can_message_user=best_match is not None,
+        can_message_user=best_match is not None and g.user is not None,
     )
 
 
 @bp.route("/items")
-@login_required
 def browse_items():
     search = request.args.get("search", "").strip()
     report_type = request.args.get("report_type", "").strip()

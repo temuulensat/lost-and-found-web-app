@@ -108,7 +108,9 @@ class SecurityTests(TestCase):
         self.assertEqual(photo_response.status_code, 200)
         photo_response.close()
         self.post('/logout')
-        self.assertEqual(self.client.get(f'/report-photos/{filename}').status_code, 302)
+        public_photo_response = self.client.get(f'/report-photos/{filename}')
+        self.assertEqual(public_photo_response.status_code, 200)
+        public_photo_response.close()
 
     def test_malformed_image_is_rejected(self):
         self.signup()

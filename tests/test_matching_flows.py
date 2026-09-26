@@ -120,6 +120,49 @@ class MatchingFlowTests(unittest.TestCase):
         self.assertIn('href="/items/2"', body)
         self.assertIn("View details", body)
 
+    def test_demo_visitors_can_browse_without_auth_links(self):
+        self.make_matching_reports()
+
+        response = self.client.get("/items")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.data.decode()
+        self.assertIn("Lost &amp; Found Feed", body)
+        self.assertIn('href="/items/1"', body)
+        self.assertNotIn("Log In", body)
+        self.assertNotIn("Sign Up", body)
+
+    def test_demo_visitors_can_view_details_without_message_action(self):
+        self.make_matching_reports()
+
+        response = self.client.get("/items/1")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.data.decode()
+        self.assertIn("Black leather wallet", body)
+        self.assertIn("% Match", body)
+        self.assertNotIn("Message User", body)
+        self.assertNotIn("Log In", body)
+        self.assertNotIn("Sign Up", body)
+
+    def test_demo_keeps_protected_actions_login_gated(self):
+        self.make_matching_reports()
+
+        protected_paths = ("/report", "/my-reports", "/matches", "/conversations")
+        for path in protected_paths:
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 302)
+            self.assertIn("/login", response.headers["Location"])
+
+    def test_landing_links_to_browse_for_demo(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        body = response.data.decode()
+        self.assertIn('href="/items"', body)
+        self.assertNotIn("Log In", body)
+        self.assertNotIn("Sign Up", body)
+
     def test_report_details_show_fields_match_and_message_action(self):
         self.make_matching_reports()
         self.login("alice")
